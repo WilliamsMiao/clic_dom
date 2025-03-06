@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { Sandbox } from '../components/Sandbox';
 import { CharacterCard } from '../components/CharacterCard';
 import { useGameStore } from '../store/GameStore';
+import { ResourceType as ResourceTypeEnum } from '../types/GameTypes';
 
 const GameContainer = styled.div`
   display: flex;
@@ -28,28 +29,124 @@ const ResourceArea = styled.div`
   max-width: 800px;
 `;
 
-const ResourceCard = styled.div`
-  width: 80px;
-  height: 100px;
+const ResourceCard = styled.div<{ resourceType: ResourceTypeEnum }>`
+  width: 60px;
+  height: 60px;
   background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 4px;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  border: 2px solid ${props => getResourceColor(props.resourceType)};
+  border-radius: 8px;
+  padding: 4px;
+  position: relative;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px ${props => getResourceColor(props.resourceType)}33;
+    
+    .resource-tooltip {
+      display: block;
+    }
+  }
 `;
 
-const ResourceCharacter = styled.div`
+const ResourceCharacter = styled.div<{ resourceType: ResourceTypeEnum }>`
   font-size: 32px;
-  color: #4a9;
+  color: ${props => getResourceColor(props.resourceType)};
+  text-shadow: 0 0 8px ${props => getResourceColor(props.resourceType)}66;
+  line-height: 50px;
+  text-align: center;
+  height: 100%;
 `;
 
 const ResourceAmount = styled.div`
-  font-size: 12px;
-  color: #aaa;
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #4a9;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
 `;
+
+const ResourceTooltip = styled.div`
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 8px;
+  background: #2a2a2a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 8px;
+  width: 120px;
+  z-index: 100;
+  
+  &:before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid #333;
+  }
+`;
+
+const TooltipContent = styled.div`
+  color: #aaa;
+  font-size: 12px;
+  text-align: center;
+`;
+
+// 根据资源类型返回对应的颜色
+const getResourceColor = (type: ResourceTypeEnum): string => {
+  switch (type) {
+    case ResourceTypeEnum.ECONOMY:
+      return '#ffd700'; // 金 - 金色
+    case ResourceTypeEnum.WOOD:
+      return '#8b4513'; // 木 - 褐色
+    case ResourceTypeEnum.WATER:
+      return '#00ffff'; // 水 - 青色
+    case ResourceTypeEnum.FIRE:
+      return '#ff4500'; // 火 - 橙红色
+    case ResourceTypeEnum.EARTH:
+      return '#8b0000'; // 土 - 深红色
+    case ResourceTypeEnum.LIFE:
+      return '#ff69b4'; // 生命 - 粉色
+    case ResourceTypeEnum.ENERGY:
+      return '#00ff00'; // 能量 - 绿色
+    default:
+      return '#4a9';
+  }
+};
+
+// 根据资源类型返回对应的类型名称
+const getResourceTypeName = (type: ResourceTypeEnum): string => {
+  switch (type) {
+    case ResourceTypeEnum.ECONOMY:
+      return '金';
+    case ResourceTypeEnum.WOOD:
+      return '木';
+    case ResourceTypeEnum.WATER:
+      return '水';
+    case ResourceTypeEnum.FIRE:
+      return '火';
+    case ResourceTypeEnum.EARTH:
+      return '土';
+    case ResourceTypeEnum.LIFE:
+      return '生命';
+    case ResourceTypeEnum.ENERGY:
+      return '能量';
+    default:
+      return '资源';
+  }
+};
 
 export const Game: React.FC = () => {
   const { characters, selectedCharacter, selectCharacter, collectedResources } = useGameStore();
@@ -69,9 +166,20 @@ export const Game: React.FC = () => {
       <Sandbox />
       <ResourceArea>
         {collectedResources.map(resource => (
-          <ResourceCard key={resource.id}>
-            <ResourceCharacter>{resource.character}</ResourceCharacter>
-            <ResourceAmount>数量：{resource.resourceAmount}</ResourceAmount>
+          <ResourceCard 
+            key={resource.id}
+            resourceType={resource.resourceType || ResourceTypeEnum.ECONOMY}
+          >
+            <ResourceCharacter resourceType={resource.resourceType || ResourceTypeEnum.ECONOMY}>
+              {resource.character}
+            </ResourceCharacter>
+            <ResourceAmount>{resource.resourceAmount}</ResourceAmount>
+            <ResourceTooltip className="resource-tooltip">
+              <TooltipContent>
+                <div>{getResourceTypeName(resource.resourceType || ResourceTypeEnum.ECONOMY)}</div>
+                <div>数量：{resource.resourceAmount}</div>
+              </TooltipContent>
+            </ResourceTooltip>
           </ResourceCard>
         ))}
       </ResourceArea>

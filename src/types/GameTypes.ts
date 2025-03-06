@@ -1,9 +1,12 @@
 // 资源类型
 export enum ResourceType {
-  LIFE = 'life',
-  ENERGY = 'energy',
-  ECONOMY = 'economy',
-  DEFENSE = 'defense'
+  LIFE = 'LIFE',
+  ENERGY = 'ENERGY',
+  ECONOMY = 'ECONOMY',
+  WOOD = 'WOOD',
+  WATER = 'WATER',
+  FIRE = 'FIRE',
+  EARTH = 'EARTH'
 }
 
 // 汉字类型

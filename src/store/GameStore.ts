@@ -20,10 +20,10 @@ interface GameState {
 const generateRandomResource = (): { character: string, type: ResourceType } => {
   const resources = [
     { character: '金', type: ResourceType.ECONOMY },
-    { character: '木', type: ResourceType.DEFENSE },
-    { character: '水', type: ResourceType.ENERGY },
-    { character: '火', type: ResourceType.ENERGY },
-    { character: '土', type: ResourceType.DEFENSE }
+    { character: '木', type: ResourceType.WOOD },
+    { character: '水', type: ResourceType.WATER },
+    { character: '火', type: ResourceType.FIRE },
+    { character: '土', type: ResourceType.EARTH }
   ];
   return resources[Math.floor(Math.random() * resources.length)];
 };
@@ -34,8 +34,8 @@ const createInitialSandbox = (): SandboxState => {
   const tiles: Tile[][] = Array(size).fill(null).map((_, y) =>
     Array(size).fill(null).map((_, x) => {
       const position = { x, y };
-      // 30%概率生成资源格子
-      if (Math.random() < 0.3) {
+      // 10%概率生成资源格子
+      if (Math.random() < 0.1) {
         const resource = generateRandomResource();
         const resourceHanzi: Hanzi = {
           id: `resource_${x}_${y}`,
@@ -120,9 +120,28 @@ export const useGameStore = create<GameState>((set) => ({
   },
 
   addCollectedResource: (resource) => {
-    set(state => ({
-      collectedResources: [...state.collectedResources, resource]
-    }));
+    set(state => {
+      // 查找是否已存在相同类型的资源
+      const existingResourceIndex = state.collectedResources.findIndex(
+        r => r.character === resource.character && r.resourceType === resource.resourceType
+      );
+
+      if (existingResourceIndex >= 0) {
+        // 如果存在，合并资源数量
+        const updatedResources = [...state.collectedResources];
+        const existingResource = updatedResources[existingResourceIndex];
+        updatedResources[existingResourceIndex] = {
+          ...existingResource,
+          resourceAmount: (existingResource.resourceAmount || 0) + (resource.resourceAmount || 0)
+        };
+        return { collectedResources: updatedResources };
+      } else {
+        // 如果不存在，添加新资源
+        return {
+          collectedResources: [...state.collectedResources, resource]
+        };
+      }
+    });
   },
 
   clearTile: (position) => {
