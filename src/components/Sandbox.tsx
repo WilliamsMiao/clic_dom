@@ -80,11 +80,15 @@ const getResourceColor = (resourceType: ResourceType): string => {
   }
 };
 
-// 获取5x5范围内的所有位置
-const getCollectionRange = (center: Position): Position[] => {
+// 根据角色获取采集范围内的所有位置
+const getCollectionRange = (center: Position, character?: Hanzi): Position[] => {
   const positions: Position[] = [];
-  for (let dy = -2; dy <= 2; dy++) {
-    for (let dx = -2; dx <= 2; dx++) {
+  if (!character || !character.collectionRange) return positions;
+  
+  const { top, right, bottom, left } = character.collectionRange;
+  
+  for (let dy = -top; dy <= bottom; dy++) {
+    for (let dx = -left; dx <= right; dx++) {
       positions.push({
         x: center.x + dx,
         y: center.y + dy
@@ -123,8 +127,11 @@ export const Sandbox: React.FC = () => {
   };
   
   // 检查相邻格子的资源
-  const checkAdjacentResources = (position: Position) => {
-    const collectionPositions = getCollectionRange(position);
+  const checkAdjacentResources = (position: Position, characterId: string) => {
+    const character = characters.find(char => char.id === characterId);
+    if (!character) return;
+    
+    const collectionPositions = getCollectionRange(position, character);
     
     collectionPositions.forEach(pos => {
       if (pos.x >= 0 && pos.x < sandbox.size && pos.y >= 0 && pos.y < sandbox.size) {
@@ -231,7 +238,7 @@ export const Sandbox: React.FC = () => {
     const { x, y } = dragPosition;
     if (x >= 0 && x < sandbox.size && y >= 0 && y < sandbox.size) {
       moveCharacter(characterId, { x, y });
-      checkAdjacentResources({ x, y });
+      checkAdjacentResources({ x, y }, characterId);
     }
     
     setDragPosition(null);
@@ -247,7 +254,7 @@ export const Sandbox: React.FC = () => {
     
     if (x >= 0 && x < sandbox.size && y >= 0 && y < sandbox.size) {
       moveCharacter(selectedCharacter, { x, y });
-      checkAdjacentResources({ x, y });
+      checkAdjacentResources({ x, y }, selectedCharacter);
     }
   };
 
@@ -289,6 +296,9 @@ export const Sandbox: React.FC = () => {
           ctx.fillStyle = '#222';
         } else if (tile.type === TileType.RESOURCE) {
           ctx.fillStyle = getResourceColor(tile.content?.resourceType || ResourceType.ECONOMY);
+        } else if (tile.type === TileType.CITY) {
+          // 绘制主城
+          ctx.fillStyle = '#4a4a9a'; // 深蓝色
         }
         ctx.fillRect(pixelX, pixelY, TILE_SIZE, TILE_SIZE);
         
@@ -304,6 +314,38 @@ export const Sandbox: React.FC = () => {
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(tile.content.character, pixelX + TILE_SIZE/2, pixelY + TILE_SIZE/2);
+        } else if (tile.type === TileType.CITY) {
+          // 如果是主城中心位置，绘制城池图标和血量
+          if (x === sandbox.city.position.x && y === sandbox.city.position.y) {
+            ctx.fillStyle = '#fff';
+            ctx.font = '16px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('城', pixelX + TILE_SIZE/2, pixelY + TILE_SIZE/2);
+            
+            // 绘制血量条
+            const healthBarWidth = TILE_SIZE * 3;
+            const healthBarHeight = 4;
+            const healthPercentage = sandbox.city.health / 1000;
+            
+            // 血条背景
+            ctx.fillStyle = '#333';
+            ctx.fillRect(
+              pixelX - TILE_SIZE,
+              pixelY - 8,
+              healthBarWidth,
+              healthBarHeight
+            );
+            
+            // 当前血量
+            ctx.fillStyle = '#f00';
+            ctx.fillRect(
+              pixelX - TILE_SIZE,
+              pixelY - 8,
+              healthBarWidth * healthPercentage,
+              healthBarHeight
+            );
+          }
         }
       });
     });
@@ -414,8 +456,9 @@ export const Sandbox: React.FC = () => {
       ctx.stroke();
       
       // 绘制采集范围预览
-      const collectionPositions = getCollectionRange(previewPosition);
-      ctx.setLineDash([4, 4]); // 设置虚线样式
+      const character = selectedCharacter ? characters.find(char => char.id === selectedCharacter) : undefined;
+      const collectionPositions = getCollectionRange(previewPosition, character);
+      ctx.setLineDash([4, 4]);
       ctx.strokeStyle = `rgba(255, 255, 255, ${0.3 + borderAlpha * 0.2})`; // 半透明白色
       ctx.lineWidth = 1;
       

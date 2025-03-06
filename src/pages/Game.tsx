@@ -29,11 +29,11 @@ const ResourceArea = styled.div`
   max-width: 800px;
 `;
 
-const ResourceCard = styled.div<{ resourceType: ResourceTypeEnum }>`
+const ResourceCard = styled.div<{ resourceType: ResourceTypeEnum; isSelected: boolean }>`
   width: 60px;
   height: 60px;
   background: #1a1a1a;
-  border: 2px solid ${props => getResourceColor(props.resourceType)};
+  border: 2px solid ${props => props.isSelected ? '#fff' : getResourceColor(props.resourceType)};
   border-radius: 8px;
   padding: 4px;
   position: relative;
@@ -48,6 +48,11 @@ const ResourceCard = styled.div<{ resourceType: ResourceTypeEnum }>`
       display: block;
     }
   }
+
+  ${props => props.isSelected && `
+    background: #2a2a2a;
+    box-shadow: 0 0 12px ${getResourceColor(props.resourceType)}66;
+  `}
 `;
 
 const ResourceCharacter = styled.div<{ resourceType: ResourceTypeEnum }>`
@@ -104,6 +109,21 @@ const TooltipContent = styled.div`
   text-align: center;
 `;
 
+const CombineButton = styled.button<{ isAvailable: boolean }>`
+  padding: 8px 16px;
+  background: ${props => props.isAvailable ? '#4a9' : '#333'};
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: ${props => props.isAvailable ? 'pointer' : 'not-allowed'};
+  margin: 10px 0;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: ${props => props.isAvailable ? '#5ba' : '#333'};
+  }
+`;
+
 // 根据资源类型返回对应的颜色
 const getResourceColor = (type: ResourceTypeEnum): string => {
   switch (type) {
@@ -149,7 +169,29 @@ const getResourceTypeName = (type: ResourceTypeEnum): string => {
 };
 
 export const Game: React.FC = () => {
-  const { characters, selectedCharacter, selectCharacter, collectedResources } = useGameStore();
+  const { 
+    characters, 
+    selectedCharacter, 
+    selectCharacter, 
+    collectedResources,
+    selectedResources,
+    toggleResourceSelection,
+    clearResourceSelection,
+    combineResources,
+    checkCombinationAvailable
+  } = useGameStore();
+
+  const canCombine = checkCombinationAvailable() !== null;
+
+  const handleResourceClick = (id: string) => {
+    toggleResourceSelection(id);
+  };
+
+  const handleCombineClick = () => {
+    if (canCombine) {
+      combineResources();
+    }
+  };
 
   return (
     <GameContainer>
@@ -169,6 +211,8 @@ export const Game: React.FC = () => {
           <ResourceCard 
             key={resource.id}
             resourceType={resource.resourceType || ResourceTypeEnum.ECONOMY}
+            isSelected={selectedResources.includes(resource.id)}
+            onClick={() => handleResourceClick(resource.id)}
           >
             <ResourceCharacter resourceType={resource.resourceType || ResourceTypeEnum.ECONOMY}>
               {resource.character}
@@ -183,6 +227,16 @@ export const Game: React.FC = () => {
           </ResourceCard>
         ))}
       </ResourceArea>
+      {selectedResources.length > 0 && (
+        <div>
+          <CombineButton 
+            isAvailable={canCombine}
+            onClick={handleCombineClick}
+          >
+            组合
+          </CombineButton>
+        </div>
+      )}
     </GameContainer>
   );
 }; 

@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Hanzi } from '../types/GameTypes';
+import { Hanzi, CharacterClass } from '../types/GameTypes';
 
 interface Props {
   character: Hanzi;
@@ -80,7 +80,7 @@ const StatsTooltip = styled.div`
   border: 1px solid #333;
   border-radius: 4px;
   padding: 8px;
-  width: 120px;
+  width: 160px;
   z-index: 100;
   
   &:before {
@@ -108,6 +108,41 @@ const Stat = styled.div`
   }
 `;
 
+const Description = styled.div`
+  color: #888;
+  font-size: 11px;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid #444;
+`;
+
+const ClassBadge = styled.div`
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  background: #4a9;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+`;
+
+// 获取职业名称
+const getClassName = (characterClass?: CharacterClass): string => {
+  switch (characterClass) {
+    case CharacterClass.WORKER:
+      return '工人';
+    case CharacterClass.FARMER:
+      return '农民';
+    case CharacterClass.WARRIOR:
+      return '战士';
+    case CharacterClass.SCHOLAR:
+      return '学者';
+    default:
+      return '未知';
+  }
+};
+
 export const CharacterCard: React.FC<Props> = ({ character, isSelected, onSelect }) => {
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('character', character.id);
@@ -125,6 +160,9 @@ export const CharacterCard: React.FC<Props> = ({ character, isSelected, onSelect
       onDragStart={handleDragStart}
     >
       <Character>{character.character}</Character>
+      {character.class && (
+        <ClassBadge>{getClassName(character.class)}</ClassBadge>
+      )}
       <StatsTooltip className="stats-tooltip">
         <Stat>
           <span>生命</span>
@@ -145,6 +183,33 @@ export const CharacterCard: React.FC<Props> = ({ character, isSelected, onSelect
             <span>速度</span>
             <span>{character.stats.speed}</span>
           </Stat>
+        )}
+        {character.stats.attack && (
+          <Stat>
+            <span>攻击</span>
+            <span>{character.stats.attack}</span>
+          </Stat>
+        )}
+        {character.stats.defense && (
+          <Stat>
+            <span>防御</span>
+            <span>{character.stats.defense}</span>
+          </Stat>
+        )}
+        {character.stats.wisdom && (
+          <Stat>
+            <span>智慧</span>
+            <span>{character.stats.wisdom}</span>
+          </Stat>
+        )}
+        {character.stats.range && (
+          <Stat>
+            <span>范围</span>
+            <span>{character.stats.range}</span>
+          </Stat>
+        )}
+        {character.description && (
+          <Description>{character.description}</Description>
         )}
       </StatsTooltip>
     </Card>
