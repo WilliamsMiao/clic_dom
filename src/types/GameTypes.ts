@@ -234,7 +234,9 @@ export interface City {
 
 // 沙盘状态
 export interface SandboxState {
-  tiles: Tile[][];
   size: number;
-  city: City;          // 添加主城信息
+  tiles: Tile[][];
+  city: City;
+  battleMode: boolean;  // 是否处于战斗模式
+  battleTiles: Tile[][]; // 战斗地图的瓦片
 } 

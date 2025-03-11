@@ -19,6 +19,7 @@ interface GameState {
   clearResourceSelection: () => void;
   combineResources: () => void;
   checkCombinationAvailable: () => CombinationRule | null;
+  toggleBattleMode: () => void;
 }
 
 // 生成随机资源
@@ -123,6 +124,16 @@ const generateResourceCluster = (
   return newTiles;
 };
 
+// 创建空战斗地图
+const createEmptyBattleMap = (size: number): Tile[][] => {
+  return Array(size).fill(null).map((_, y) =>
+    Array(size).fill(null).map((_, x) => ({
+      type: TileType.EMPTY,
+      position: { x, y }
+    }))
+  );
+};
+
 // 创建初始沙盘状态
 const createInitialSandbox = (): SandboxState => {
   const size = 30;
@@ -190,7 +201,9 @@ const createInitialSandbox = (): SandboxState => {
   return {
     size,
     tiles,
-    city
+    city,
+    battleMode: false,
+    battleTiles: createEmptyBattleMap(size)
   };
 };
 
@@ -241,146 +254,104 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   addCollectedResource: (resource) => {
-    set(state => {
-      // 查找是否已存在相同类型的资源
-      const existingResourceIndex = state.collectedResources.findIndex(
-        r => r.character === resource.character && r.resourceType === resource.resourceType
-      );
-
-      if (existingResourceIndex >= 0) {
-        // 如果存在，合并资源数量
-        const updatedResources = [...state.collectedResources];
-        const existingResource = updatedResources[existingResourceIndex];
-        updatedResources[existingResourceIndex] = {
-          ...existingResource,
-          resourceAmount: (existingResource.resourceAmount || 0) + (resource.resourceAmount || 0)
-        };
-        return { collectedResources: updatedResources };
-      } else {
-        // 如果不存在，添加新资源
-        return {
-          collectedResources: [...state.collectedResources, resource]
-        };
-      }
-    });
+    set(state => ({
+      collectedResources: [...state.collectedResources, resource]
+    }));
   },
 
   clearTile: (position) => {
-    set(state => {
-      const newTiles = [...state.sandbox.tiles];
-      newTiles[position.y][position.x] = {
-        type: TileType.EMPTY,
-        position
-      };
-      return {
-        sandbox: {
-          ...state.sandbox,
-          tiles: newTiles
-        }
-      };
-    });
-  },
-
-  // 切换资源选择状态
-  toggleResourceSelection: (id: string) => {
-    set(state => {
-      const isSelected = state.selectedResources.includes(id);
-      let newSelectedResources: string[];
-      
-      if (isSelected) {
-        newSelectedResources = state.selectedResources.filter(resourceId => resourceId !== id);
-      } else {
-        newSelectedResources = [...state.selectedResources, id];
+    set(state => ({
+      sandbox: {
+        ...state.sandbox,
+        tiles: state.sandbox.tiles.map((row, y) =>
+          row.map((tile, x) =>
+            x === position.x && y === position.y
+              ? { ...tile, type: TileType.EMPTY, content: undefined }
+              : tile
+          )
+        )
       }
-
-      return { selectedResources: newSelectedResources };
-    });
+    }));
   },
 
-  // 清除资源选择
+  toggleResourceSelection: (id) => {
+    set(state => ({
+      selectedResources: state.selectedResources.includes(id)
+        ? state.selectedResources.filter(resId => resId !== id)
+        : [...state.selectedResources, id]
+    }));
+  },
+
   clearResourceSelection: () => {
     set({ selectedResources: [] });
   },
 
-  // 检查是否可以组合
   checkCombinationAvailable: () => {
     const state = get();
-    const selectedResources = state.collectedResources.filter(
-      resource => state.selectedResources.includes(resource.id)
+    const selectedResources = state.collectedResources.filter(res =>
+      state.selectedResources.includes(res.id)
     );
 
-    // 统计每种资源类型的数量
-    const resourceCounts = new Map<ResourceType, number>();
-    selectedResources.forEach(resource => {
-      if (resource.resourceType) {
-        const count = resourceCounts.get(resource.resourceType) || 0;
-        resourceCounts.set(resource.resourceType, count + 1);
-      }
-    });
-
-    // 检查是否满足任何组合规则
     return COMBINATION_RULES.find(rule => {
-      return rule.inputs.every(input => {
-        const count = resourceCounts.get(input.type) || 0;
-        return count >= input.count;
-      });
+      const resourceCounts = selectedResources.reduce((acc, res) => {
+        if (res.resourceType) {
+          acc[res.resourceType] = (acc[res.resourceType] || 0) + 1;
+        }
+        return acc;
+      }, {} as Record<ResourceType, number>);
+
+      return rule.inputs.every(input =>
+        resourceCounts[input.type] >= input.count
+      );
     }) || null;
   },
 
-  // 组合资源
   combineResources: () => {
     const state = get();
     const rule = state.checkCombinationAvailable();
-    
     if (!rule) return;
 
-    // 获取选中的资源
-    const selectedResources = state.collectedResources.filter(
-      resource => state.selectedResources.includes(resource.id)
+    const selectedResources = state.collectedResources.filter(res =>
+      state.selectedResources.includes(res.id)
     );
 
-    // 按类型分组
-    const resourcesByType = new Map<ResourceType, Hanzi[]>();
-    selectedResources.forEach(resource => {
-      if (resource.resourceType) {
-        const resources = resourcesByType.get(resource.resourceType) || [];
-        resourcesByType.set(resource.resourceType, [...resources, resource]);
-      }
-    });
-
-    // 检查是否有足够的资源
-    const hasEnoughResources = rule.inputs.every(input => {
-      const resources = resourcesByType.get(input.type) || [];
-      return resources.length >= input.count;
-    });
-
-    if (!hasEnoughResources) return;
-
-    // 移除用于组合的资源
-    const usedResourceIds = new Set<string>();
-    rule.inputs.forEach(input => {
-      const resources = resourcesByType.get(input.type) || [];
-      const usedResources = resources.slice(0, input.count);
-      usedResources.forEach(resource => usedResourceIds.add(resource.id));
-    });
-
-    // 创建新的资源
-    const newResource: Hanzi = {
-      id: `combined_${Date.now()}_${Math.random()}`,
+    // 创建新的组合汉字
+    const newHanzi: Hanzi = {
+      id: `combined_${Date.now()}`,
       character: rule.output.character,
       type: HanziType.RESOURCE,
       stats: rule.output.stats,
-      resourceType: rule.output.type,
-      resourceAmount: 1,
-      canCombine: true
+      resourceType: rule.output.type
     };
 
-    set(state => ({
-      collectedResources: [
-        ...state.collectedResources.filter(resource => !usedResourceIds.has(resource.id)),
-        newResource
-      ],
+    // 移除已使用的资源
+    const usedResourceTypes = new Map<ResourceType, number>();
+    const remainingResources = state.collectedResources.filter(res => {
+      if (!state.selectedResources.includes(res.id)) return true;
+      if (!res.resourceType) return false;
+
+      const count = usedResourceTypes.get(res.resourceType) || 0;
+      const required = rule.inputs.find(input => input.type === res.resourceType)?.count || 0;
+
+      if (count < required) {
+        usedResourceTypes.set(res.resourceType, count + 1);
+        return false;
+      }
+      return true;
+    });
+
+    set({
+      collectedResources: [...remainingResources, newHanzi],
       selectedResources: []
-    }));
+    });
   },
+
+  toggleBattleMode: () => {
+    set(state => ({
+      sandbox: {
+        ...state.sandbox,
+        battleMode: !state.sandbox.battleMode
+      }
+    }));
+  }
 })); 
