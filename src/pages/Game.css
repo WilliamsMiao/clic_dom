@@ -1,0 +1,224 @@
+.game-container {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8f8f8;
+  font-family: 'Microsoft YaHei', '黑体', sans-serif;
+}
+
+.game-header {
+  background-color: #333;
+  color: white;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.game-header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.back-button {
+  background-color: #555;
+  color: white;
+  border: none;
+  padding: 5px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  background-color: #777;
+}
+
+.resource-bar {
+  display: flex;
+  gap: 10px;
+}
+
+.resource-item {
+  padding: 5px 10px;
+  border-radius: 3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: white;
+  font-size: 12px;
+  min-width: 50px;
+}
+
+.resource-name {
+  font-weight: bold;
+}
+
+.game-board {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.board-placeholder {
+  width: 600px;
+  height: 600px;
+  background-color: #ddd;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 5px;
+}
+
+.game-controls {
+  padding: 10px 20px;
+  background-color: #eee;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* 在这里添加您的游戏棋盘和其他UI元素的样式 */
+
+/* 这个CSS文件可以包含额外的样式，与styled-components配合使用 */
+
+/* 棋盘格子样式 */
+.chess-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 2px;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: #e6d2b5;
+  padding: 10px;
+  border-radius: 4px;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.chess-cell {
+  position: relative;
+  width: 100%;
+  padding-top: 100%; /* 保持正方形 */
+  background-color: #f0e4d0;
+  border: 1px solid #c8b092;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.chess-cell:hover {
+  background-color: #f7ecd9;
+}
+
+.chess-cell.active {
+  background-color: #ffd79c;
+}
+
+.chess-piece {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  height: 80%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  font-size: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+
+.chess-piece:hover {
+  transform: translate(-50%, -50%) scale(1.05);
+}
+
+.chess-piece.red {
+  background-color: #e74c3c;
+}
+
+.chess-piece.black {
+  background-color: #2c3e50;
+}
+
+/* 显示可能的移动位置 */
+.possible-move {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 30%;
+  height: 30%;
+  border-radius: 50%;
+  background-color: rgba(46, 204, 113, 0.5);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.7;
+  }
+}
+
+/* 游戏信息面板 */
+.game-info-panel {
+  background-color: rgba(139, 69, 19, 0.1);
+  border: 1px solid #8d6e63;
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 20px;
+  width: 100%;
+}
+
+.game-info-panel h3 {
+  margin-top: 0;
+  color: #8d6e63;
+  border-bottom: 1px solid #d7ccc8;
+  padding-bottom: 10px;
+}
+
+/* 移动历史记录 */
+.move-history {
+  max-height: 150px;
+  overflow-y: auto;
+  margin-top: 10px;
+  padding-right: 10px;
+}
+
+.move-history-item {
+  padding: 5px 0;
+  border-bottom: 1px dashed #d7ccc8;
+  font-size: 14px;
+}
+
+.move-history-item:last-child {
+  border-bottom: none;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .chess-grid {
+    grid-template-columns: repeat(10, 1fr);
+    gap: 1px;
+  }
+  
+  .chess-piece {
+    font-size: 12px;
+  }
+}
